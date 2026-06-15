@@ -7,9 +7,11 @@ public class Main {
         while(true){
             System.out.print("$ ");
             String s=in.nextLine();
-            int n=s.length();
-            String sub=s.substring(5,n);
-            System.out.println(sub);
+            if(s.startsWith("echo")){
+                int n=s.length();
+                String sub=s.substring(5,n);
+                System.out.println(sub);
+            }
         }
         
         // in.close();
