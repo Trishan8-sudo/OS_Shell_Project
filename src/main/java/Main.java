@@ -11,7 +11,27 @@ public class Main {
             else if(input.startsWith("type ")){
                 String rem=input.substring(5,input.length());
                 if(rem.equals("echo") || rem.equals("type") || rem.equals("exit")) System.out.println(rem+" is a shell builtin");
-                else System.out.println(rem+": not found");
+                else{
+                    String pathEnv=System.getenv("PATH");
+
+                    String[] dirs=pathEnv.split(java.io.File.pathSeparator);
+
+                    boolean found=false;
+
+                    for(String dir:dirs){
+                        java.io.File file=new java.io.File(dir,rem);
+
+                        if(file.exists() && file.canExecute()){
+                            System.out.println(rem+" is "+file.getAbsolutePath());
+                            found=true;
+                            break;
+                        }
+                    }
+
+                    if(!found){
+                        System.out.println(rem+": not found");
+                    }
+                }
             }
             else if(input.startsWith("echo ")){
                 System.out.println(input.substring(5));
