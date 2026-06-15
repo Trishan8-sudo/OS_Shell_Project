@@ -9,8 +9,8 @@ public class Main {
             String input=in.nextLine();
             if(input.equals("exit")) break;
             else if(input.startsWith("type ")){
-                String rem=input.substring(5);
-                if(rem=="echo" || rem=="type" || rem=="exit") System.out.println(rem+" is a shell builtin");
+                String rem=input.substring(5,input.length());
+                if(rem.equals("echo") || rem.equals("type") || rem.equals("exit")) System.out.println(rem+" is a shell builtin");
                 else System.out.println(rem+": not found");
             }
             else System.out.println(input+": command not found");
