@@ -12,6 +12,7 @@ public class Main {
                 String sub=s.substring(5,n);
                 System.out.println(sub);
             }
+            else if(s.startsWith("exit")) break;
             else System.out.println(s+": command not found");
         }
         
