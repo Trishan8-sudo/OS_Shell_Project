@@ -6,9 +6,10 @@ public class Main {
         Scanner in = new Scanner(System.in);
         while(true){
             System.out.print("$ ");
-            String s=in.next();
-            if(s.equals("exit")) break;
-            System.out.println(s+": command not found");
+            String s=in.nextLine();
+            int n=s.length();
+            String sub=s.substring(5,n);
+            System.out.println(sub);
         }
         
         // in.close();
