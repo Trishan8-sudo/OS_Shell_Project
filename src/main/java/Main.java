@@ -3,13 +3,14 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws Exception {
         Scanner in = new Scanner(System.in);
+        String currentDirectory = System.getProperty("user.dir");
         while (true) {
             System.out.print("$ ");
             String input = in.nextLine();
             if (input.equals("exit")) break;
             else if (input.startsWith("type ")) {
                 String rem = input.substring(5, input.length());
-                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd")) {
+                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd") || rem.equals("cd")) {
                     System.out.println(rem + " is a shell builtin");
                 } else {
                     java.io.File exeFile = findExecutable(rem);
@@ -20,11 +21,24 @@ public class Main {
                     }
                 }
             } else if (input.equals("pwd")) {
-                System.out.println(System.getProperty("user.dir"));
+                System.out.println(currentDirectory);
+            } else if (input.startsWith("cd ")) {
+                String targetPath = input.substring(3).trim();
+
+                if (targetPath.startsWith("/")) {
+                    java.io.File targetDir = new java.io.File(targetPath);
+                    if (targetDir.exists() && targetDir.isDirectory()) {
+                        currentDirectory = targetDir.getAbsolutePath();
+                        System.setProperty("user.dir", currentDirectory);
+                    } else {
+                        System.out.println("cd: " + targetPath + ": No such file or directory");
+                    }
+                } else {
+                    System.out.println("cd: " + targetPath + ": No such file or directory");
+                }
             } else if (input.startsWith("echo ")) {
                 System.out.println(input.substring(5));
             } else {
-                // Split the input into the command name and its arguments.
                 String[] tokens = input.trim().split("\\s+");
                 if (tokens.length == 0 || tokens[0].isEmpty()) continue;
 
@@ -42,7 +56,6 @@ public class Main {
         // in.close();
     }
 
-    // Searches PATH for an executable matching the given command name.
     private static java.io.File findExecutable(String command) {
         String pathEnv = System.getenv("PATH");
         if (pathEnv == null) return null;
@@ -58,14 +71,10 @@ public class Main {
         return null;
     }
 
-    // Runs an external program, passing the program name and arguments,
-    // and lets its output/error streams pass through to this process.
     private static void runExternalProgram(String[] tokens) {
         try {
-            // tokens[0] is the program name as typed by the user (argv[0]),
-            // which ProcessBuilder will also use to locate/launch the program.
             ProcessBuilder pb = new ProcessBuilder(tokens);
-            pb.inheritIO(); // pass through stdin/stdout/stderr directly
+            pb.inheritIO();
             Process process = pb.start();
             process.waitFor();
         } catch (Exception e) {
