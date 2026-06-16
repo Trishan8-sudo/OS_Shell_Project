@@ -24,15 +24,21 @@ public class Main {
                 System.out.println(currentDirectory);
             } else if (input.startsWith("cd ")) {
                 String targetPath = input.substring(3).trim();
-
+                java.io.File targetDir;
                 if (targetPath.startsWith("/")) {
-                    java.io.File targetDir = new java.io.File(targetPath);
-                    if (targetDir.exists() && targetDir.isDirectory()) {
-                        currentDirectory = targetDir.getAbsolutePath();
-                        System.setProperty("user.dir", currentDirectory);
-                    } else {
-                        System.out.println("cd: " + targetPath + ": No such file or directory");
-                    }
+                    targetDir = new java.io.File(targetPath);
+                } else {
+                    targetDir = new java.io.File(currentDirectory, targetPath);
+                }
+
+                try {
+                    targetDir = targetDir.getCanonicalFile();
+                } catch (Exception e) {
+                }
+
+                if (targetDir.exists() && targetDir.isDirectory()) {
+                    currentDirectory = targetDir.getAbsolutePath();
+                    System.setProperty("user.dir", currentDirectory);
                 } else {
                     System.out.println("cd: " + targetPath + ": No such file or directory");
                 }
@@ -52,8 +58,6 @@ public class Main {
                 }
             }
         }
-
-        // in.close();
     }
 
     private static java.io.File findExecutable(String command) {
