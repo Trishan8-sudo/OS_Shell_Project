@@ -2,43 +2,66 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        // TODO: Uncomment the code below to pass the first stage
         Scanner in = new Scanner(System.in);
-        while(true){
+        while (true) {
             System.out.print("$ ");
-            String input=in.nextLine();
-            if(input.equals("exit")) break;
-            else if(input.startsWith("type ")){
-                String rem=input.substring(5,input.length());
-                if(rem.equals("echo") || rem.equals("type") || rem.equals("exit")) System.out.println(rem+" is a shell builtin");
-                else{
-                    String pathEnv=System.getenv("PATH");
-
-                    String[] dirs=pathEnv.split(java.io.File.pathSeparator);
-
-                    boolean found=false;
-
-                    for(String dir:dirs){
-                        java.io.File file=new java.io.File(dir,rem);
-
-                        if(file.exists() && file.canExecute()){
-                            System.out.println(rem+" is "+file.getAbsolutePath());
-                            found=true;
-                            break;
-                        }
-                    }
-
-                    if(!found){
-                        System.out.println(rem+": not found");
+            String input = in.nextLine();
+            if (input.equals("exit")) break;
+            else if (input.startsWith("type ")) {
+                String rem = input.substring(5, input.length());
+                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit")) {
+                    System.out.println(rem + " is a shell builtin");
+                } else {
+                    java.io.File exeFile = findExecutable(rem);
+                    if (exeFile != null) {
+                        System.out.println(rem + " is " + exeFile.getAbsolutePath());
+                    } else {
+                        System.out.println(rem + ": not found");
                     }
                 }
-            }
-            else if(input.startsWith("echo ")){
+            } else if (input.startsWith("echo ")) {
                 System.out.println(input.substring(5));
+            } else {
+                String[] tokens = input.trim().split("\\s+");
+                if (tokens.length == 0 || tokens[0].isEmpty()) continue;
+
+                String command = tokens[0];
+                java.io.File exeFile = findExecutable(command);
+
+                if (exeFile != null) {
+                    runExternalProgram(tokens);
+                } else {
+                    System.out.println(input + ": command not found");
+                }
             }
-            else System.out.println(input+": command not found");
         }
-        
+
         // in.close();
+    }
+
+    private static java.io.File findExecutable(String command) {
+        String pathEnv = System.getenv("PATH");
+        if (pathEnv == null) return null;
+
+        String[] dirs = pathEnv.split(java.io.File.pathSeparator);
+
+        for (String dir : dirs) {
+            java.io.File file = new java.io.File(dir, command);
+            if (file.exists() && file.canExecute()) {
+                return file;
+            }
+        }
+        return null;
+    }
+
+    private static void runExternalProgram(String[] tokens) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(tokens);
+            pb.inheritIO();
+            Process process = pb.start();
+            process.waitFor();
+        } catch (Exception e) {
+            System.out.println(tokens[0] + ": error executing program");
+        }
     }
 }
