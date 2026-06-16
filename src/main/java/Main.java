@@ -24,6 +24,13 @@ public class Main {
                 System.out.println(currentDirectory);
             } else if (input.startsWith("cd ")) {
                 String targetPath = input.substring(3).trim();
+
+                if (targetPath.equals("~")) {
+                    targetPath = System.getenv("HOME");
+                } else if (targetPath.startsWith("~/")) {
+                    targetPath = System.getenv("HOME") + targetPath.substring(1);
+                }
+
                 java.io.File targetDir;
                 if (targetPath.startsWith("/")) {
                     targetDir = new java.io.File(targetPath);
