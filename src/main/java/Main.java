@@ -1,4 +1,6 @@
 import java.util.Scanner;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -50,21 +52,63 @@ public class Main {
                     System.out.println("cd: " + targetPath + ": No such file or directory");
                 }
             } else if (input.startsWith("echo ")) {
-                System.out.println(input.substring(5));
+                List<String> tokens = tokenize(input.substring(5));
+                System.out.println(String.join(" ", tokens));
             } else {
-                String[] tokens = input.trim().split("\\s+");
-                if (tokens.length == 0 || tokens[0].isEmpty()) continue;
+                List<String> tokens = tokenize(input.trim());
+                if (tokens.isEmpty()) continue;
 
-                String command = tokens[0];
+                String command = tokens.get(0);
                 java.io.File exeFile = findExecutable(command);
 
                 if (exeFile != null) {
-                    runExternalProgram(tokens);
+                    runExternalProgram(tokens.toArray(new String[0]));
                 } else {
                     System.out.println(input + ": command not found");
                 }
             }
         }
+    }
+
+    private static List<String> tokenize(String input) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inSingleQuotes = false;
+        boolean tokenStarted = false;
+        int i = 0;
+        int len = input.length();
+        while (i < len) {
+            char c = input.charAt(i);
+            if (inSingleQuotes) {
+                if (c == '\'') {
+                    inSingleQuotes = false;
+                } else {
+                    current.append(c);
+                }
+                i++;
+            } else {
+                if (c == '\'') {
+                    inSingleQuotes = true;
+                    tokenStarted = true;
+                    i++;
+                } else if (Character.isWhitespace(c)) {
+                    if (tokenStarted) {
+                        tokens.add(current.toString());
+                        current.setLength(0);
+                        tokenStarted = false;
+                    }
+                    i++;
+                } else {
+                    current.append(c);
+                    tokenStarted = true;
+                    i++;
+                }
+            }
+        }
+        if (tokenStarted) {
+            tokens.add(current.toString());
+        }
+        return tokens;
     }
 
     private static java.io.File findExecutable(String command) {
