@@ -90,10 +90,17 @@ public class Main {
             } else if (inDoubleQuotes) {
                 if (c == '"') {
                     inDoubleQuotes = false;
+                    i++;
+                } else if (c == '\\' && i + 1 < len &&
+                        (input.charAt(i + 1) == '"' || input.charAt(i + 1) == '\\' ||
+                         input.charAt(i + 1) == '$' || input.charAt(i + 1) == '`' ||
+                         input.charAt(i + 1) == '\n')) {
+                    current.append(input.charAt(i + 1));
+                    i += 2;
                 } else {
                     current.append(c);
+                    i++;
                 }
-                i++;
             } else {
                 if (c == '\\') {
                     if (i + 1 < len) {
