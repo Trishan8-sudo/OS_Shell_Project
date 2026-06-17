@@ -74,6 +74,7 @@ public class Main {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inSingleQuotes = false;
+        boolean inDoubleQuotes = false;
         boolean tokenStarted = false;
         int i = 0;
         int len = input.length();
@@ -86,9 +87,20 @@ public class Main {
                     current.append(c);
                 }
                 i++;
+            } else if (inDoubleQuotes) {
+                if (c == '"') {
+                    inDoubleQuotes = false;
+                } else {
+                    current.append(c);
+                }
+                i++;
             } else {
                 if (c == '\'') {
                     inSingleQuotes = true;
+                    tokenStarted = true;
+                    i++;
+                } else if (c == '"') {
+                    inDoubleQuotes = true;
                     tokenStarted = true;
                     i++;
                 } else if (Character.isWhitespace(c)) {
