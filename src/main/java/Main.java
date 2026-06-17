@@ -95,7 +95,15 @@ public class Main {
                 }
                 i++;
             } else {
-                if (c == '\'') {
+                if (c == '\\') {
+                    if (i + 1 < len) {
+                        current.append(input.charAt(i + 1));
+                        tokenStarted = true;
+                        i += 2;
+                    } else {
+                        i++;
+                    }
+                } else if (c == '\'') {
                     inSingleQuotes = true;
                     tokenStarted = true;
                     i++;
