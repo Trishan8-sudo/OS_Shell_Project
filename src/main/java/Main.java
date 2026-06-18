@@ -15,11 +15,15 @@ public class Main {
             if (rawTokens.isEmpty()) continue;
 
             String outputFile = null;
+            String errorFile = null;
             List<String> tokens = new ArrayList<>();
             for (int idx = 0; idx < rawTokens.size(); idx++) {
                 String t = rawTokens.get(idx);
                 if ((t.equals(">") || t.equals("1>")) && idx + 1 < rawTokens.size()) {
                     outputFile = rawTokens.get(idx + 1);
+                    idx++;
+                } else if (t.equals("2>") && idx + 1 < rawTokens.size()) {
+                    errorFile = rawTokens.get(idx + 1);
                     idx++;
                 } else {
                     tokens.add(t);
@@ -72,7 +76,7 @@ public class Main {
                     currentDirectory = targetDir.getAbsolutePath();
                     System.setProperty("user.dir", currentDirectory);
                 } else {
-                    System.out.println("cd: " + targetPath + ": No such file or directory");
+                    writeOutput("cd: " + targetPath + ": No such file or directory", errorFile);
                 }
             } else if (command.equals("echo")) {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
@@ -81,7 +85,7 @@ public class Main {
                 java.io.File exeFile = findExecutable(command);
 
                 if (exeFile != null) {
-                    runExternalProgram(tokens.toArray(new String[0]), outputFile);
+                    runExternalProgram(tokens.toArray(new String[0]), outputFile, errorFile);
                 } else {
                     System.out.println(input + ": command not found");
                 }
@@ -89,12 +93,12 @@ public class Main {
         }
     }
 
-    private static void writeOutput(String text, String outputFile) {
-        if (outputFile == null) {
+    private static void writeOutput(String text, String targetFile) {
+        if (targetFile == null) {
             System.out.println(text);
         } else {
             try {
-                java.io.File file = new java.io.File(outputFile);
+                java.io.File file = new java.io.File(targetFile);
                 java.io.File parent = file.getParentFile();
                 if (parent != null && !parent.exists()) {
                     parent.mkdirs();
@@ -190,9 +194,10 @@ public class Main {
         return null;
     }
 
-    private static void runExternalProgram(String[] tokens, String outputFile) {
+    private static void runExternalProgram(String[] tokens, String outputFile, String errorFile) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tokens);
+
             if (outputFile != null) {
                 java.io.File file = new java.io.File(outputFile);
                 java.io.File parent = file.getParentFile();
@@ -200,11 +205,23 @@ public class Main {
                     parent.mkdirs();
                 }
                 pb.redirectOutput(file);
-                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-                pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
             } else {
-                pb.inheritIO();
+                pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             }
+
+            if (errorFile != null) {
+                java.io.File file = new java.io.File(errorFile);
+                java.io.File parent = file.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+                pb.redirectError(file);
+            } else {
+                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            }
+
+            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+
             Process process = pb.start();
             process.waitFor();
         } catch (Exception e) {
