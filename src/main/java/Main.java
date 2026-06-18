@@ -10,22 +10,45 @@ public class Main {
             System.out.print("$ ");
             String input = in.nextLine();
             if (input.equals("exit")) break;
-            else if (input.startsWith("type ")) {
-                String rem = input.substring(5, input.length());
+
+            List<String> rawTokens = tokenize(input);
+            if (rawTokens.isEmpty()) continue;
+
+            String outputFile = null;
+            List<String> tokens = new ArrayList<>();
+            for (int idx = 0; idx < rawTokens.size(); idx++) {
+                String t = rawTokens.get(idx);
+                if ((t.equals(">") || t.equals("1>")) && idx + 1 < rawTokens.size()) {
+                    outputFile = rawTokens.get(idx + 1);
+                    idx++;
+                } else {
+                    tokens.add(t);
+                }
+            }
+
+            if (tokens.isEmpty()) continue;
+            String command = tokens.get(0);
+
+            if (command.equals("exit")) {
+                break;
+            } else if (command.equals("type")) {
+                String rem = tokens.size() > 1 ? tokens.get(1) : "";
+                String result;
                 if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd") || rem.equals("cd")) {
-                    System.out.println(rem + " is a shell builtin");
+                    result = rem + " is a shell builtin";
                 } else {
                     java.io.File exeFile = findExecutable(rem);
                     if (exeFile != null) {
-                        System.out.println(rem + " is " + exeFile.getAbsolutePath());
+                        result = rem + " is " + exeFile.getAbsolutePath();
                     } else {
-                        System.out.println(rem + ": not found");
+                        result = rem + ": not found";
                     }
                 }
-            } else if (input.equals("pwd")) {
-                System.out.println(currentDirectory);
-            } else if (input.startsWith("cd ")) {
-                String targetPath = input.substring(3).trim();
+                writeOutput(result, outputFile);
+            } else if (command.equals("pwd")) {
+                writeOutput(currentDirectory, outputFile);
+            } else if (command.equals("cd")) {
+                String targetPath = tokens.size() > 1 ? tokens.get(1) : "";
 
                 if (targetPath.equals("~")) {
                     targetPath = System.getenv("HOME");
@@ -51,21 +74,35 @@ public class Main {
                 } else {
                     System.out.println("cd: " + targetPath + ": No such file or directory");
                 }
-            } else if (input.startsWith("echo ")) {
-                List<String> tokens = tokenize(input.substring(5));
-                System.out.println(String.join(" ", tokens));
+            } else if (command.equals("echo")) {
+                String result = String.join(" ", tokens.subList(1, tokens.size()));
+                writeOutput(result, outputFile);
             } else {
-                List<String> tokens = tokenize(input.trim());
-                if (tokens.isEmpty()) continue;
-
-                String command = tokens.get(0);
                 java.io.File exeFile = findExecutable(command);
 
                 if (exeFile != null) {
-                    runExternalProgram(tokens.toArray(new String[0]));
+                    runExternalProgram(tokens.toArray(new String[0]), outputFile);
                 } else {
                     System.out.println(input + ": command not found");
                 }
+            }
+        }
+    }
+
+    private static void writeOutput(String text, String outputFile) {
+        if (outputFile == null) {
+            System.out.println(text);
+        } else {
+            try {
+                java.io.File file = new java.io.File(outputFile);
+                java.io.File parent = file.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+                try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(file))) {
+                    writer.println(text);
+                }
+            } catch (Exception e) {
             }
         }
     }
@@ -153,10 +190,21 @@ public class Main {
         return null;
     }
 
-    private static void runExternalProgram(String[] tokens) {
+    private static void runExternalProgram(String[] tokens, String outputFile) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tokens);
-            pb.inheritIO();
+            if (outputFile != null) {
+                java.io.File file = new java.io.File(outputFile);
+                java.io.File parent = file.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+                pb.redirectOutput(file);
+                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+                pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+            } else {
+                pb.inheritIO();
+            }
             Process process = pb.start();
             process.waitFor();
         } catch (Exception e) {
