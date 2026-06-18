@@ -30,6 +30,13 @@ public class Main {
                 }
             }
 
+            if (outputFile != null) {
+                ensureFileTruncated(outputFile);
+            }
+            if (errorFile != null) {
+                ensureFileTruncated(errorFile);
+            }
+
             if (tokens.isEmpty()) continue;
             String command = tokens.get(0);
 
@@ -90,6 +97,19 @@ public class Main {
                     System.out.println(input + ": command not found");
                 }
             }
+        }
+    }
+
+    private static void ensureFileTruncated(String path) {
+        try {
+            java.io.File file = new java.io.File(path);
+            java.io.File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (java.io.FileWriter fw = new java.io.FileWriter(file)) {
+            }
+        } catch (Exception e) {
         }
     }
 
@@ -199,23 +219,13 @@ public class Main {
             ProcessBuilder pb = new ProcessBuilder(tokens);
 
             if (outputFile != null) {
-                java.io.File file = new java.io.File(outputFile);
-                java.io.File parent = file.getParentFile();
-                if (parent != null && !parent.exists()) {
-                    parent.mkdirs();
-                }
-                pb.redirectOutput(file);
+                pb.redirectOutput(new java.io.File(outputFile));
             } else {
                 pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             }
 
             if (errorFile != null) {
-                java.io.File file = new java.io.File(errorFile);
-                java.io.File parent = file.getParentFile();
-                if (parent != null && !parent.exists()) {
-                    parent.mkdirs();
-                }
-                pb.redirectError(file);
+                pb.redirectError(new java.io.File(errorFile));
             } else {
                 pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             }
