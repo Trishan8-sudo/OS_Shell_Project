@@ -117,11 +117,18 @@ public class Main {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
                 writeOutput(result, outputFile, outputAppend);
             } 
-            else if (command.equals("jobs")) {}
+            else if (command.equals("jobs")) {
+                for (int i = 0; i < jobs.size(); i++) {
+                    Job job = jobs.get(i);
+                    String marker = (i == jobs.size() - 1) ? "+" : "-";
+                    String statusField = String.format("%-24s", job.status);
+                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + job.command, outputFile, outputAppend);
+                }
+            }
             else {
                 java.io.File exeFile = findExecutable(command);
                 if (exeFile != null) {
-                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend, background);
+                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend, background, input);
                 } else {
                     System.out.println(input + ": command not found");
                 }
@@ -130,6 +137,21 @@ public class Main {
     }
 
     private static int jobCounter = 0;
+    private static List<Job> jobs = new ArrayList<>();
+
+    private static class Job {
+        int number;
+        long pid;
+        String command;
+        String status;
+
+        Job(int number, long pid, String command, String status) {
+            this.number = number;
+            this.pid = pid;
+            this.command = command;
+            this.status = status;
+        }
+    }
 
     private static void ensureFileTruncated(String path) {
         try {
@@ -260,7 +282,7 @@ public class Main {
         return null;
     }
 
-    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile, boolean errorAppend, boolean background) {
+    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile, boolean errorAppend, boolean background, String originalInput) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tokens);
 
@@ -285,6 +307,11 @@ public class Main {
             if (background) {
                 jobCounter++;
                 System.out.println("[" + jobCounter + "] " + process.pid());
+                String command = originalInput.trim();
+                if (!command.endsWith("&")) {
+                    command = command + " &";
+                }
+                jobs.add(new Job(jobCounter, process.pid(), command, "Running"));
             } else {
                 process.waitFor();
             }
