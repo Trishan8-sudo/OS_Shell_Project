@@ -9,10 +9,12 @@ public class Main {
         while (true) {
             System.out.print("$ ");
             String input = in.nextLine();
-            if (input.equals("exit")) break;
+            if (input.equals("exit"))
+                break;
 
             List<String> rawTokens = tokenize(input);
-            if (rawTokens.isEmpty()) continue;
+            if (rawTokens.isEmpty())
+                continue;
 
             String outputFile = null;
             boolean outputAppend = false;
@@ -57,14 +59,16 @@ public class Main {
                 }
             }
 
-            if (tokens.isEmpty()) continue;
+            if (tokens.isEmpty())
+                continue;
 
             boolean background = false;
             if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).equals("&")) {
                 background = true;
                 tokens.remove(tokens.size() - 1);
             }
-            if (tokens.isEmpty()) continue;
+            if (tokens.isEmpty())
+                continue;
 
             String command = tokens.get(0);
 
@@ -73,7 +77,8 @@ public class Main {
             } else if (command.equals("type")) {
                 String rem = tokens.size() > 1 ? tokens.get(1) : "";
                 String result;
-                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd") || rem.equals("cd") || rem.equals("jobs")) {
+                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd")
+                        || rem.equals("cd") || rem.equals("jobs")) {
                     result = rem + " is a shell builtin";
                 } else {
                     java.io.File exeFile = findExecutable(rem);
@@ -116,27 +121,37 @@ public class Main {
             } else if (command.equals("echo")) {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
                 writeOutput(result, outputFile, outputAppend);
-            } 
-            else if (command.equals("jobs")) {
-                int size = jobs.size();
-                for (int i = 0; i < size; i++) {
-                    Job job = jobs.get(i);
+            } else if (command.equals("jobs")) {
+                int currentJobNumber = -1;
+                int previousJobNumber = -1;
+                for (Job job : jobs) {
+                    if (job.number > currentJobNumber) {
+                        previousJobNumber = currentJobNumber;
+                        currentJobNumber = job.number;
+                    } else if (job.number > previousJobNumber) {
+                        previousJobNumber = job.number;
+                    }
+                }
+                List<Job> sortedJobs = new ArrayList<>(jobs);
+                sortedJobs.sort((a, b) -> Integer.compare(a.number, b.number));
+                for (Job job : sortedJobs) {
                     String marker;
-                    if (i == size - 1) {
+                    if (job.number == currentJobNumber) {
                         marker = "+";
-                    } else if (i == size - 2) {
+                    } else if (job.number == previousJobNumber) {
                         marker = "-";
                     } else {
                         marker = " ";
                     }
                     String statusField = String.format("%-24s", job.status);
-                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + job.command, outputFile, outputAppend);
+                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + job.command, outputFile,
+                            outputAppend);
                 }
-            }
-            else {
+            } else {
                 java.io.File exeFile = findExecutable(command);
                 if (exeFile != null) {
-                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend, background, input);
+                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend,
+                            background, input);
                 } else {
                     System.out.println(input + ": command not found");
                 }
@@ -230,8 +245,8 @@ public class Main {
                     i++;
                 } else if (c == '\\' && i + 1 < len &&
                         (input.charAt(i + 1) == '"' || input.charAt(i + 1) == '\\' ||
-                         input.charAt(i + 1) == '$' || input.charAt(i + 1) == '`' ||
-                         input.charAt(i + 1) == '\n')) {
+                                input.charAt(i + 1) == '$' || input.charAt(i + 1) == '`' ||
+                                input.charAt(i + 1) == '\n')) {
                     current.append(input.charAt(i + 1));
                     i += 2;
                 } else {
@@ -277,7 +292,8 @@ public class Main {
 
     private static java.io.File findExecutable(String command) {
         String pathEnv = System.getenv("PATH");
-        if (pathEnv == null) return null;
+        if (pathEnv == null)
+            return null;
 
         String[] dirs = pathEnv.split(java.io.File.pathSeparator);
 
@@ -290,20 +306,23 @@ public class Main {
         return null;
     }
 
-    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile, boolean errorAppend, boolean background, String originalInput) {
+    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile,
+            boolean errorAppend, boolean background, String originalInput) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tokens);
 
             if (outputFile != null) {
                 java.io.File file = new java.io.File(outputFile);
-                pb.redirectOutput(outputAppend ? ProcessBuilder.Redirect.appendTo(file) : ProcessBuilder.Redirect.to(file));
+                pb.redirectOutput(
+                        outputAppend ? ProcessBuilder.Redirect.appendTo(file) : ProcessBuilder.Redirect.to(file));
             } else {
                 pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             }
 
             if (errorFile != null) {
                 java.io.File file = new java.io.File(errorFile);
-                pb.redirectError(errorAppend ? ProcessBuilder.Redirect.appendTo(file) : ProcessBuilder.Redirect.to(file));
+                pb.redirectError(
+                        errorAppend ? ProcessBuilder.Redirect.appendTo(file) : ProcessBuilder.Redirect.to(file));
             } else {
                 pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             }
