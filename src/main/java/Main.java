@@ -65,7 +65,7 @@ public class Main {
             } else if (command.equals("type")) {
                 String rem = tokens.size() > 1 ? tokens.get(1) : "";
                 String result;
-                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd") || rem.equals("cd")) {
+                if (rem.equals("echo") || rem.equals("type") || rem.equals("exit") || rem.equals("pwd") || rem.equals("cd") || rem.equals("jobs")) {
                     result = rem + " is a shell builtin";
                 } else {
                     java.io.File exeFile = findExecutable(rem);
@@ -108,9 +108,10 @@ public class Main {
             } else if (command.equals("echo")) {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
                 writeOutput(result, outputFile, outputAppend);
-            } else {
+            } 
+            else if (command.equals("jobs")) {}
+            else {
                 java.io.File exeFile = findExecutable(command);
-
                 if (exeFile != null) {
                     runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend);
                 } else {
