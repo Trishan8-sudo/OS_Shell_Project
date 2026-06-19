@@ -122,6 +122,12 @@ public class Main {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
                 writeOutput(result, outputFile, outputAppend);
             } else if (command.equals("jobs")) {
+                for (Job job : jobs) {
+                    if (job.process != null && !job.process.isAlive()) {
+                        job.status = "Done";
+                    }
+                }
+
                 int currentJobNumber = -1;
                 int previousJobNumber = -1;
                 for (Job job : jobs) {
@@ -132,6 +138,7 @@ public class Main {
                         previousJobNumber = job.number;
                     }
                 }
+
                 List<Job> sortedJobs = new ArrayList<>(jobs);
                 sortedJobs.sort((a, b) -> Integer.compare(a.number, b.number));
                 for (Job job : sortedJobs) {
@@ -144,9 +151,15 @@ public class Main {
                         marker = " ";
                     }
                     String statusField = String.format("%-24s", job.status);
-                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + job.command, outputFile,
+                    String displayCommand = job.command;
+                    if (job.status.equals("Done") && displayCommand.endsWith(" &")) {
+                        displayCommand = displayCommand.substring(0, displayCommand.length() - 2);
+                    }
+                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + displayCommand, outputFile,
                             outputAppend);
                 }
+
+                jobs.removeIf(job -> job.status.equals("Done"));
             } else {
                 java.io.File exeFile = findExecutable(command);
                 if (exeFile != null) {
@@ -167,12 +180,14 @@ public class Main {
         long pid;
         String command;
         String status;
+        Process process;
 
-        Job(int number, long pid, String command, String status) {
+        Job(int number, long pid, String command, String status, Process process) {
             this.number = number;
             this.pid = pid;
             this.command = command;
             this.status = status;
+            this.process = process;
         }
     }
 
@@ -338,7 +353,7 @@ public class Main {
                 if (!command.endsWith("&")) {
                     command = command + " &";
                 }
-                jobs.add(new Job(jobCounter, process.pid(), command, "Running"));
+                jobs.add(new Job(jobCounter, process.pid(), command, "Running", process));
             } else {
                 process.waitFor();
             }
