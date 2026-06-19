@@ -118,9 +118,17 @@ public class Main {
                 writeOutput(result, outputFile, outputAppend);
             } 
             else if (command.equals("jobs")) {
-                for (int i = 0; i < jobs.size(); i++) {
+                int size = jobs.size();
+                for (int i = 0; i < size; i++) {
                     Job job = jobs.get(i);
-                    String marker = (i == jobs.size() - 1) ? "+" : "-";
+                    String marker;
+                    if (i == size - 1) {
+                        marker = "+";
+                    } else if (i == size - 2) {
+                        marker = "-";
+                    } else {
+                        marker = " ";
+                    }
                     String statusField = String.format("%-24s", job.status);
                     writeOutput("[" + job.number + "]" + marker + "  " + statusField + job.command, outputFile, outputAppend);
                 }
