@@ -58,6 +58,14 @@ public class Main {
             }
 
             if (tokens.isEmpty()) continue;
+
+            boolean background = false;
+            if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).equals("&")) {
+                background = true;
+                tokens.remove(tokens.size() - 1);
+            }
+            if (tokens.isEmpty()) continue;
+
             String command = tokens.get(0);
 
             if (command.equals("exit")) {
@@ -113,13 +121,15 @@ public class Main {
             else {
                 java.io.File exeFile = findExecutable(command);
                 if (exeFile != null) {
-                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend);
+                    runExternalProgram(tokens.toArray(new String[0]), outputFile, outputAppend, errorFile, errorAppend, background);
                 } else {
                     System.out.println(input + ": command not found");
                 }
             }
         }
     }
+
+    private static int jobCounter = 0;
 
     private static void ensureFileTruncated(String path) {
         try {
@@ -250,7 +260,7 @@ public class Main {
         return null;
     }
 
-    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile, boolean errorAppend) {
+    private static void runExternalProgram(String[] tokens, String outputFile, boolean outputAppend, String errorFile, boolean errorAppend, boolean background) {
         try {
             ProcessBuilder pb = new ProcessBuilder(tokens);
 
@@ -271,7 +281,13 @@ public class Main {
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
 
             Process process = pb.start();
-            process.waitFor();
+
+            if (background) {
+                jobCounter++;
+                System.out.println("[" + jobCounter + "] " + process.pid());
+            } else {
+                process.waitFor();
+            }
         } catch (Exception e) {
             System.out.println(tokens[0] + ": error executing program");
         }
