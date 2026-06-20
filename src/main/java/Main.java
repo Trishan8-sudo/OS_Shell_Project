@@ -148,7 +148,6 @@ public class Main {
         }
     }
 
-    private static int jobCounter = 0;
     private static List<Job> jobs = new ArrayList<>();
 
     private static class Job {
@@ -165,6 +164,16 @@ public class Main {
             this.status = status;
             this.process = process;
         }
+    }
+
+    private static int nextJobNumber() {
+        int max = 0;
+        for (Job job : jobs) {
+            if (job.number > max) {
+                max = job.number;
+            }
+        }
+        return max + 1;
     }
 
     private static void markExitedJobs() {
@@ -380,13 +389,13 @@ public class Main {
             Process process = pb.start();
 
             if (background) {
-                jobCounter++;
-                System.out.println("[" + jobCounter + "] " + process.pid());
+                int jobNumber = nextJobNumber();
+                System.out.println("[" + jobNumber + "] " + process.pid());
                 String command = originalInput.trim();
                 if (!command.endsWith("&")) {
                     command = command + " &";
                 }
-                jobs.add(new Job(jobCounter, process.pid(), command, "Running", process));
+                jobs.add(new Job(jobNumber, process.pid(), command, "Running", process));
             } else {
                 process.waitFor();
             }
