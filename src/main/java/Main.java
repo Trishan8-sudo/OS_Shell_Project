@@ -7,6 +7,7 @@ public class Main {
         Scanner in = new Scanner(System.in);
         String currentDirectory = System.getProperty("user.dir");
         while (true) {
+            reapBeforePrompt();
             System.out.print("$ ");
             String input = in.nextLine();
             if (input.equals("exit"))
@@ -122,41 +123,16 @@ public class Main {
                 String result = String.join(" ", tokens.subList(1, tokens.size()));
                 writeOutput(result, outputFile, outputAppend);
             } else if (command.equals("jobs")) {
-                for (Job job : jobs) {
-                    if (job.process != null && !job.process.isAlive()) {
-                        job.status = "Done";
-                    }
-                }
+                markExitedJobs();
 
-                int currentJobNumber = -1;
-                int previousJobNumber = -1;
-                for (Job job : jobs) {
-                    if (job.number > currentJobNumber) {
-                        previousJobNumber = currentJobNumber;
-                        currentJobNumber = job.number;
-                    } else if (job.number > previousJobNumber) {
-                        previousJobNumber = job.number;
-                    }
-                }
+                int[] markers = computeJobMarkers();
+                int currentJobNumber = markers[0];
+                int previousJobNumber = markers[1];
 
                 List<Job> sortedJobs = new ArrayList<>(jobs);
                 sortedJobs.sort((a, b) -> Integer.compare(a.number, b.number));
                 for (Job job : sortedJobs) {
-                    String marker;
-                    if (job.number == currentJobNumber) {
-                        marker = "+";
-                    } else if (job.number == previousJobNumber) {
-                        marker = "-";
-                    } else {
-                        marker = " ";
-                    }
-                    String statusField = String.format("%-24s", job.status);
-                    String displayCommand = job.command;
-                    if (job.status.equals("Done") && displayCommand.endsWith(" &")) {
-                        displayCommand = displayCommand.substring(0, displayCommand.length() - 2);
-                    }
-                    writeOutput("[" + job.number + "]" + marker + "  " + statusField + displayCommand, outputFile,
-                            outputAppend);
+                    writeOutput(formatJobLine(job, currentJobNumber, previousJobNumber), outputFile, outputAppend);
                 }
 
                 jobs.removeIf(job -> job.status.equals("Done"));
@@ -189,6 +165,63 @@ public class Main {
             this.status = status;
             this.process = process;
         }
+    }
+
+    private static void markExitedJobs() {
+        for (Job job : jobs) {
+            if (job.process != null && !job.process.isAlive()) {
+                job.status = "Done";
+            }
+        }
+    }
+
+    private static int[] computeJobMarkers() {
+        int currentJobNumber = -1;
+        int previousJobNumber = -1;
+        for (Job job : jobs) {
+            if (job.number > currentJobNumber) {
+                previousJobNumber = currentJobNumber;
+                currentJobNumber = job.number;
+            } else if (job.number > previousJobNumber) {
+                previousJobNumber = job.number;
+            }
+        }
+        return new int[] { currentJobNumber, previousJobNumber };
+    }
+
+    private static String formatJobLine(Job job, int currentJobNumber, int previousJobNumber) {
+        String marker;
+        if (job.number == currentJobNumber) {
+            marker = "+";
+        } else if (job.number == previousJobNumber) {
+            marker = "-";
+        } else {
+            marker = " ";
+        }
+        String statusField = String.format("%-24s", job.status);
+        String displayCommand = job.command;
+        if (job.status.equals("Done") && displayCommand.endsWith(" &")) {
+            displayCommand = displayCommand.substring(0, displayCommand.length() - 2);
+        }
+        return "[" + job.number + "]" + marker + "  " + statusField + displayCommand;
+    }
+
+    private static void reapBeforePrompt() {
+        markExitedJobs();
+
+        int[] markers = computeJobMarkers();
+        int currentJobNumber = markers[0];
+        int previousJobNumber = markers[1];
+
+        List<Job> sortedJobs = new ArrayList<>(jobs);
+        sortedJobs.sort((a, b) -> Integer.compare(a.number, b.number));
+        for (Job job : sortedJobs) {
+            if (job.status.equals("Done")) {
+                System.out.println(formatJobLine(job, currentJobNumber, previousJobNumber));
+            }
+        }
+
+        jobs.removeIf(job -> job.status.equals("Done"));
     }
 
     private static void ensureFileTruncated(String path) {
